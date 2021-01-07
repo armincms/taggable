@@ -1,12 +1,15 @@
 <?php
 
 namespace Armincms\Taggable;
- 
 
-trait Taggable  
-{ 
-	public function tags()
-	{
-		return $this->morphToMany(Tag::class, 'taggable', 'tags_taggable');
-	}
+use Illuminate\Database\Eloquent\Relations\MorphPivot;  
+
+class Taggable extends MorphPivot 
+{   
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'tags_taggable';
 }

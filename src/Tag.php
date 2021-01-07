@@ -2,63 +2,58 @@
 
 namespace Armincms\Taggable;
 
-use Armincms\Concerns\Authorization;
-use Armincms\Concerns\IntractsWithMedia;
-use Armincms\Contracts\Authorizable; 
-use Armincms\Localization\Concerns\HasTranslation;
-use Armincms\Localization\Contracts\Translatable;  
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\{Model, SoftDeletes}; 
 use Spatie\MediaLibrary\HasMedia\HasMedia;
+use Armincms\Concerns\{HasConfig, HasMediaTrait, Authorization, InteractsWithLayouts};  
+use Armincms\Targomaan\Concerns\InteractsWithTargomaan;
+use Armincms\Targomaan\Contracts\Translatable; 
+use Armincms\Contracts\Authorizable;  
 
 class Tag extends Model implements Translatable, HasMedia, Authorizable 
 {
-    use HasTranslation, SoftDeletes, IntractsWithMedia, Authorization; 
+    use InteractsWithTargomaan, SoftDeletes, HasMediaTrait, Authorization, HasConfig, InteractsWithLayouts; 
+    
+    const TRANSLATION_TABLE = 'tags_translations';
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $casts = [
-    	"config" => "json", 
-    ];
-
+    const LOCALE_KEY = 'language';
 
     protected $medias = [
-        'image' => [
-            'multiple' => true,
-            'disk' => 'armin.image',
-            'schemas' => [
-                'cover', 'logo', '*',
-            ],
+        'banner' => [  
+            'disk'  => 'armin.image',
+            'conversions' => [
+                'common'
+            ]
         ], 
-    ];
+
+        'logo' => [  
+            'disk'  => 'armin.image',
+            'conversions' => [
+                'common'
+            ]
+        ], 
+
+        'app_banner' => [  
+            'disk'  => 'armin.image',
+            'conversions' => [
+                'common'
+            ]
+        ], 
+
+        'app_logo' => [  
+            'disk'  => 'armin.image',
+            'conversions' => [
+                'common'
+            ]
+        ], 
+    ]; 
 
     /**
-     * The "booting" method of the model.
-     *
-     * @return void
-     */
-    protected static function boot()
-    {
-        parent::boot(); 
-    }   
-
-    /**
-     * Get the translation database.
+     * Driver name of the targomaan.
      * 
-     * @return string
+     * @return [type] [description]
      */
-    public function getTranslationTable()
+    public function translator(): string
     {
-        return $this->getTable() . '_translations';
-    } 
-
-    public function setConfigAttribute($config)
-    { 
-        $this->attributes['config'] = collect($this->config)->whereNotIn(
-            'layout', collect($config)->pluck('layout')->all()
-        )->merge($config)->toJson(); 
+        return 'layeric';
     }
 }

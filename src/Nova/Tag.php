@@ -1,41 +1,40 @@
 <?php
 
 namespace Armincms\Taggable\Nova;
- 
-use Armincms\Nova\Resource ;  
+  
 use Illuminate\Http\Request;
-use Laravel\Nova\Http\Requests\NovaRequest;
-use Laravel\Nova\Fields\Select;
-use Laravel\Nova\Fields\Text;
-use Whitecube\NovaFlexibleContent\Flexible;
-use Eminiarts\Tabs\Tabs;
-use OwenMelbz\RadioField\RadioButton;
+use Laravel\Nova\Panel; 
+use Laravel\Nova\Fields\{Text, Select, BooleanGroup}; 
+use Whitecube\NovaFlexibleContent\Flexible;  
+use Armincms\Nova\Fields\Images; 
+use Armincms\Fields\Targomaan;
+use Zareismail\Fields\Complex;
+use Armincms\Taggable\Helper;
+use Armincms\Nova\Resource;  
 
-abstract class Tag extends Resource
+class Tag extends Resource
 {    
     /**
      * The model the resource corresponds to.
      *
      * @var string
      */
-    public static $model = 'Armincms\\Taggable\\Tag';
+    public static $model = \Armincms\Taggable\Tag::class;
 
     /**
      * The single value that should be used to represent the resource when being displayed.
      *
      * @var string
      */
-    public static $title = 'tag'; 
+    public static $title = 'tag';  
 
     /**
-     * The columns that should be searched in the translation table.
+     * The logical group associated with the resource.
      *
-     * @var array
+     * @var string
      */
-    public static $searchTranslations = [
-        'tag'
-    ];  
-    
+    public static $group = 'Taxonomies';
+
     /**
      * Get the fields displayed by the resource.
      *
@@ -43,105 +42,139 @@ abstract class Tag extends Resource
      * @return array
      */
     public function fields(Request $request)
-    {
-        return [ 
-            $this->resourceField(__("Tag"), 'tag'),  
+    { 
+        return [    
+            Targomaan::make([
+                
+                Text::make(__('Tag Name'), 'tag')
+                    ->required()
+                    ->rules('required'),
 
-            $this->panel(__("Tag display settings"), $this->tab(function($tab) use ($request) { 
-                foreach ($this->taggables() as $taggable) {
-                    if($fields = $this->taggableFields($request, $taggable)) {
-                        $tab->group($taggable::label(), $fields);
-                    }  
-                }  
-            })->toArray()), 
+                Text::make(__('Url Slug'), 'slug') 
+                    ->nullable()
+                    ->hideFromIndex()
+                    ->help(__('Caution: cleaning the input causes rebuild it. This string used in url address.')), 
+            ]), 
+
+            Complex::make(__('Images'), [$this, 'imageFields']),   
+
+            new Panel(__('Advanced'), [  
+
+                Select::make(__('Display Layout'), 'config->layout')
+                    ->options(collect(static::newModel()->singleLayouts())->map->label())
+                    ->displayUsingLabels()
+                    ->hideFromIndex(),
+
+                Complex::make(__('Contents Display Layout'), function() use ($request) {
+                    return Helper::displayableResources($request)->map(function($resource) {
+                            return Select::make(__($resource::label()), 'config->layouts->'.$resource::uriKey())
+                                        ->options(collect($resource::newModel()->singleLayouts())->map->label())
+                                        ->displayUsingLabels()
+                                        ->hideFromIndex();
+                    }); 
+                }), 
+
+                BooleanGroup::make(__('Display Setting'), 'config->display')
+                    ->options($this->displayConfigurations($request)),
+
+
+                Flexible::make(__('Contents Display Settings'))
+                    ->preset(\Armincms\Nova\Flexible\Presets\RelatableDisplayFields::class, [
+                        'request'   => $request,
+                        'interface' => \Armincms\Taggable\Contracts\Taggable::class, 
+                    ]),
+
+            ]), 
+        ];
+    }   
+
+    /**
+     * Return`s array of fields to hnalde iamges.
+     * 
+     * @return array
+     */
+    public function imageFields()
+    {
+        return [  
+            Images::make(__('Banner'), 'banner')
+                ->conversionOnPreview('common-thumbnail') 
+                ->conversionOnDetailView('common-thumbnail') 
+                ->conversionOnIndexView('common-thumbnail')
+                ->fullSize(),
+
+            Images::make(__('Logo'), 'logo')
+                ->conversionOnPreview('common-thumbnail') 
+                ->conversionOnDetailView('common-thumbnail') 
+                ->conversionOnIndexView('common-thumbnail')
+                ->fullSize(),
+
+            Images::make(__('Application Banner'), 'app_banner')
+                ->conversionOnPreview('common-thumbnail') 
+                ->conversionOnDetailView('common-thumbnail') 
+                ->conversionOnIndexView('common-thumbnail')
+                ->fullSize(),
+
+            Images::make(__('Application Logo'), 'app_logo')
+                ->conversionOnPreview('common-thumbnail') 
+                ->conversionOnDetailView('common-thumbnail') 
+                ->conversionOnIndexView('common-thumbnail')
+                ->fullSize(), 
         ];
     }
 
-    public function taggableFields(Request $request, $taggable)
-    { 
-        return collect(static::screens())->map(function($screenName, $screen) use ($request, $taggable) { 
-
-            if(! $this->shouldIgnoreScreen($request, $taggable, $screen)) { 
-                $fields =  $this->prepareTaggableFields(
-                    $taggable, $this->prepareScreenFields($screen, $taggable::fields($request))
-                );
-
-                $toggle = $this->screenToggler($screenName, "{$taggable::configKey()}.{$screen}", [
-                    0 => collect($fields)->map->attribute->filter()
-                ]);
-                     
-
-                return collect($fields)
-                        ->flatten()
-                        ->prepend($toggle)
-                        ->prepend($this->heading($screenName)->onlyOnDetail())
-                        ->each(function($field) use ($taggable, $screen)  { 
-                            $field->canSee(function($request) use ($taggable, $screen) { 
-                                if($request->editing == false) { 
-                                    return data_get(
-                                        $request->findModelQuery()->first(), "config.{$taggable::configKey()}.{$screen}"
-                                    );
-                                }  
-
-                                return true; 
-                            });   
-                        }); 
-            } 
-
-            return $this->prepareTaggableFields($taggable, [
-                Text::make($screenName, $screen)->fillUsing(function() {
-                    return [];
-                }),
-            ]);
-        })->filter()->flatten()->toArray();
-    }
-
-    public static function screens()
+    /**
+     * Returnc tag display configurations.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request 
+     * @return array
+     */
+    public function displayConfigurations(Request $request)
     {
         return [
-            'desktop' => __('Desktop'), 
-            'mobile'  => __('Mobile'), 
-            'tablet'  => __('Tablet')
+            'name' => __('Display the tag name'), 
+
+            'banner' => __('Display the tag banner'),
+
+            'logo' => __('Display the tag logo if possible'), 
         ];
-    } 
+    }  
 
-    public function shouldIgnoreScreen(Request $request, $taggable, $screen)
+    /**
+     * Determine if the resource should be available for the given request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    public function authorizeToViewAny(Request $request)
     {
-        return $request->editing &&
-               $request->exists($taggable::configKey()."_{$screen}") &&
-               (int) $request->get($taggable::configKey()."_{$screen}") == 0;
+        return true;
     } 
 
-    public function prepareTaggableFields($taggable, $fields)
-    { 
-        return $this->configField([
-                    $this->jsonField($taggable::configKey(), $fields)
-                ]) 
-                ->saveHistory()
-                ->hideFromIndex()
-                ->toArray();
+    /**
+     * Determine if the resource should be available for the given request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    public static function authorizedToViewAny(Request $request)
+    {
+        return true;
     }
 
-    public function prepareScreenFields($screen, $fields)
+    /**
+     * Get the cards available on the entity.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
+    public function cards(Request $request)
     {
         return [
-            $this->jsonField($screen, $fields)
+            Metrics\NewTags::make(),
+
+            Metrics\TagsPerDay::make(),
+
+            Metrics\TagsPerResource::make(),
         ];
     }
-
-    public function screenToggler($name, $attribute, $toggles = [])
-    {
-        return RadioButton::make($name, $attribute)
-                    ->options([__("Default"), __("Custom")])
-                    ->toggle($toggles)
-                    ->default(0)
-                    ->marginBetween()
-                    ->onlyOnForms()
-                    ->fillUsing(function() { })
-                    ->resolveUsing(function($value, $taggable, $attribute) {  
-                        return data_get($taggable->config, $attribute) ? 1 : 0;
-                    });
-    }
-
-    abstract public function taggables() : array;
 }
