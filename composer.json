@@ -7,8 +7,9 @@
     ],
     "license": "MIT",
     "require": {
-        "php": ">=7.1.0",
-        "eminiarts/nova-tabs": "^1.2"
+        "php": ">=7.1.0", 
+        "superlatif/nova-tag-input": "^1.1",
+        "zareismail/complex": "^0.3.0"
     },
     "autoload": {
         "psr-4": {
@@ -18,7 +19,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Armincms\\Taggable\\ToolServiceProvider"
+                "Armincms\\Taggable\\TaggableServiceProvider"
             ]
         }
     },
