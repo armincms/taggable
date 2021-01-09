@@ -5,12 +5,13 @@ namespace Armincms\Taggable\Nova;
 use Illuminate\Http\Request;
 use Laravel\Nova\Panel; 
 use Laravel\Nova\Fields\{Text, Select, BooleanGroup}; 
-use Whitecube\NovaFlexibleContent\Flexible;  
+use Whitecube\NovaFlexibleContent\Flexible;    
+use Inspheric\Fields\Url;
 use Armincms\Nova\Fields\Images; 
 use Armincms\Fields\Targomaan;
 use Zareismail\Fields\Complex;
 use Armincms\Taggable\Helper;
-use Armincms\Nova\Resource;  
+use Armincms\Nova\Resource;
 
 class Tag extends Resource
 {    
@@ -44,16 +45,32 @@ class Tag extends Resource
     public function fields(Request $request)
     { 
         return [    
+
+            Url::make(__('Tag Name'), 'url')
+                ->exceptOnForms()
+                ->alwaysClickable() 
+                ->resolveUsing(function($value, $resource, $attribute) {
+                    return app('site')->get('taggable')->url(urldecode($value));
+                })
+                ->titleUsing(function($value, $resource) {
+                    return $this->tag;
+                }) 
+                ->labelUsing(function($value, $resource) {
+                    return $this->tag;
+                }),
+
             Targomaan::make([
                 
                 Text::make(__('Tag Name'), 'tag')
                     ->required()
-                    ->rules('required'),
+                    ->rules('required')
+                    ->onlyOnForms(),
 
                 Text::make(__('Url Slug'), 'slug') 
                     ->nullable()
                     ->hideFromIndex()
-                    ->help(__('Caution: cleaning the input causes rebuild it. This string used in url address.')), 
+                    ->help(__('Caution: cleaning the input causes rebuild it. This string used in url address.'))
+                    ->onlyOnForms(), 
             ]), 
 
             Complex::make(__('Images'), [$this, 'imageFields']),   

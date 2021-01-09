@@ -2,18 +2,21 @@
 
 namespace Armincms\Taggable;
 
+use Illuminate\Http\Request; 
 use Illuminate\Database\Eloquent\{Model, SoftDeletes}; 
 use Spatie\MediaLibrary\HasMedia\HasMedia;
 use Armincms\Concerns\{HasConfig, HasMediaTrait, Authorization, InteractsWithLayouts};  
 use Armincms\Targomaan\Concerns\InteractsWithTargomaan;
-use Armincms\Targomaan\Contracts\Translatable; 
-use Armincms\Contracts\Authorizable;  
+use Armincms\Targomaan\Contracts\Translatable;  
+use Armincms\Contracts\Authorizable;   
 
 class Tag extends Model implements Translatable, HasMedia, Authorizable 
 {
-    use InteractsWithTargomaan, SoftDeletes, HasMediaTrait, Authorization, HasConfig, InteractsWithLayouts; 
+    use InteractsWithTargomaan, SoftDeletes, HasMediaTrait, Authorization, HasConfig, InteractsWithLayouts;  
     
     const TRANSLATION_TABLE = 'tags_translations';
+
+    const TRANSLATION_MODEL = Translation::class;
 
     const LOCALE_KEY = 'language';
 
@@ -45,8 +48,8 @@ class Tag extends Model implements Translatable, HasMedia, Authorizable
                 'common'
             ]
         ], 
-    ]; 
-
+    ];  
+    
     /**
      * Driver name of the targomaan.
      * 
@@ -55,5 +58,57 @@ class Tag extends Model implements Translatable, HasMedia, Authorizable
     public function translator(): string
     {
         return 'layeric';
+    } 
+
+    /**
+     * Prepare the resource for JSON serialization.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return array
+     */
+    public function serializeForDetail(Request $request)
+    {
+        return [
+            'name' => $this->name,
+            'logo' => $this->getLogo(),
+            'banner' => $this->getBanner(),
+            'abstract' => $this->abstract,
+        ];
+    }
+
+    /**
+     * Retruns the Banner images.
+     * 
+     * @return array
+     */
+    public function getBanner()
+    {
+        return $this->getConversions($this->getFirstMedia('banner'), ['main', 'thumbnail']);
+    }
+
+    /**
+     * Retruns the Logo images.
+     * 
+     * @return array
+     */
+    public function getLogo()
+    {
+        return $this->getConversions($this->getFirstMedia('logo'), ['thumbnail']);
+    }
+
+    /**
+     * Handle dynamic method calls into the model.
+     *
+     * @param  string  $method
+     * @param  array  $parameters
+     * @return mixed
+     */
+    public function __call($method, $parameters)
+    {
+        if($resource = Helper::resourceInformation(app('request'))->where('key', $method)->first()) {
+            return $this->morphedByMany($resource['model'], 'taggable', 'tags_taggable');
+        }
+
+        return parent::__call($method, $parameters);
     }
 }
