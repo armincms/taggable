@@ -8,6 +8,7 @@ use Illuminate\Console\Events\ArtisanStarting;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Laravel\Nova\Events\ServingNova;
 use Laravel\Nova\Nova as LaravelNova;
+use Core\HttpSite\Events\ServingFront;
 
 class TaggableServiceProvider extends ServiceProvider implements DeferrableProvider
 {  
@@ -36,6 +37,7 @@ class TaggableServiceProvider extends ServiceProvider implements DeferrableProvi
         return [
             ServingNova::class,
             ArtisanStarting::class,
+            ServingFront::class,
         ];
     }
     /**
