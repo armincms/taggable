@@ -59,6 +59,14 @@ class Tag extends Resource
                     return $this->tag;
                 }),
 
+            $this->when(! $request->isMethod('get'), function() {
+                return Text::make(__('Url'), 'tag')->fillUsing(function($request, $model) {
+                    $model->saved(function($model) {
+                        $model->translations()->get()->each->setPermalink();
+                    });
+                });
+            }), 
+
             Targomaan::make([
                 
                 Text::make(__('Tag Name'), 'tag')
@@ -80,19 +88,31 @@ class Tag extends Resource
                 Select::make(__('Display Layout'), 'config->layout')
                     ->options(collect(static::newModel()->singleLayouts())->map->label())
                     ->displayUsingLabels()
-                    ->hideFromIndex(),
+                    ->hideFromIndex()
+                    ->required()
+                    ->rules('required'),
 
                 Complex::make(__('Contents Display Layout'), function() use ($request) {
                     return Helper::displayableResources($request)->map(function($resource) {
                             return Select::make(__($resource::label()), 'config->layouts->'.$resource::uriKey())
-                                        ->options(collect($resource::newModel()->singleLayouts())->map->label())
+                                        ->options(collect($resource::newModel()->listableLayouts())->map->label())
                                         ->displayUsingLabels()
                                         ->hideFromIndex();
                     }); 
-                }), 
+                }),  
+
+                Text::make(__('Readmore'), 'config->display->readmore')
+                    ->withMeta(array_filter([
+                        'value' => $request->isCreateOrAttachRequest() ? __('Readmore ...') : null
+                    ])),
 
                 BooleanGroup::make(__('Display Setting'), 'config->display')
-                    ->options($this->displayConfigurations($request)),
+                    ->options($this->displayConfigurations($request))
+                    ->withMeta(array_filter([
+                        'value' => $request->isCreateOrAttachRequest() 
+                                        ? $this->displayConfigurations($request)
+                                        : []
+                    ])),
 
 
                 Flexible::make(__('Contents Display Settings'))
@@ -152,7 +172,7 @@ class Tag extends Resource
 
             'banner' => __('Display the tag banner'),
 
-            'logo' => __('Display the tag logo if possible'), 
+            'logo' => __('Display the tag logo if possible'),  
         ];
     }  
 

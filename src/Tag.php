@@ -69,10 +69,9 @@ class Tag extends Model implements Translatable, HasMedia, Authorizable
     public function serializeForDetail(Request $request)
     {
         return [
-            'name' => $this->name,
+            'name' => $this->tag,
             'logo' => $this->getLogo(),
-            'banner' => $this->getBanner(),
-            'abstract' => $this->abstract,
+            'banner' => $this->getBanner(), 
         ];
     }
 
@@ -83,7 +82,7 @@ class Tag extends Model implements Translatable, HasMedia, Authorizable
      */
     public function getBanner()
     {
-        return $this->getConversions($this->getFirstMedia('banner'), ['main', 'thumbnail']);
+        return $this->getConversions($this->getFirstMedia('banner'), ['common-main', 'common-thumbnail']);
     }
 
     /**

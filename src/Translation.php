@@ -26,6 +26,13 @@ class Translation extends Pivot
     protected $guarded = []; 
 
     /**
+     * The "booting" method of the model.
+     *
+     * @return void
+     */
+    public static $autoLink = false;
+    
+    /**
      * Return the sluggable configuration array for this model.
      *
      * @return array
