@@ -25,6 +25,12 @@ class TaggableServiceProvider extends ServiceProvider implements DeferrableProvi
         LaravelNova::resources([ 
             Nova\Tag::class,
         ]);
+
+        app('site')->push('taggable', function($site) {
+            $site->directory('tags');
+
+            $site->pushComponent(new Components\Tag);
+        });
     }
 
     /**
