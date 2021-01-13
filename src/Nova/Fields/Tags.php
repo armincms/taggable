@@ -19,7 +19,7 @@ class Tags extends Field
     public function __construct($name, $attribute = null, callable $resolveCallback = null)
     {
     	parent::__construct($name, $attribute, function($tags) {
-    		return $tags->pluck('tag')->all();
+    		return collect($tags)->pluck('tag')->all();
     	});
 
     	$this->autocompleteItems(Tag::get()->map->tag->all());
