@@ -29,4 +29,18 @@ class Helper
     { 
         return SharedResource::resourceInformation($request, Contracts\Taggable::class);
     }
+
+    /**
+     * Get the categorizable resources available for the layout consumption.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Support\Collection
+     */
+    public static function displayableResources(Request $request)
+    {
+        return Helper::availableResources($request, Contracts\Taggable::class)
+                ->filter(function($resource) {
+                    return Common::instanceOf($resource::$model, HasLayout::class);
+                });
+    } 
 }
