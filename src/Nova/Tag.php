@@ -37,6 +37,33 @@ class Tag extends Resource
     public static $group = 'Taxonomies';
 
     /**
+     * The columns that should be searched.
+     *
+     * @var array
+     */
+    public static $search = [
+        'id'
+    ];
+
+    /**
+     * Apply the search query to the query.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $search
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    protected static function applySearch($query, $search)
+    {
+        return $query->orWhere(function($query) use ($search) {
+            $query->when($search, function($query) use ($search) {
+                $query->whereHas('translations', function($query) use ($search) {
+                    $query->where('tag', 'like', "%{$search}%");
+                });
+            });
+        });
+    }
+
+    /**
      * Get the fields displayed by the resource.
      *
      * @param  \Illuminate\Http\Request  $request
