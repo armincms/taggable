@@ -61,6 +61,16 @@ class Tag extends Model implements Translatable, HasMedia, Authorizable
     } 
 
     /**
+     * Get the tag url.
+     * 
+     * @return string
+     */
+    public function url(): string
+    {
+        return $this->targomaan()->getTranslationForLocale($this, app()->getLocale())->url();
+    }
+
+    /**
      * Prepare the resource for JSON serialization.
      *
      * @param  \Illuminate\Http\Request  $request
