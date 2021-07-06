@@ -20,9 +20,7 @@ class Tags extends Field
     {
     	parent::__construct($name, $attribute, function($tags) {
     		return collect($tags)->pluck('tag')->all();
-    	});
-
-    	$this->autocompleteItems(Tag::get()->map->tag->all());
+    	}); 
     } 
 
     /**
@@ -65,5 +63,17 @@ class Tags extends Field
     	}); 
 
     	return Tag::get()->pluck('id', 'tag')->only($items)->values()->all();
+    }
+
+    /**
+     * Prepare the field for JSON serialization.
+     *
+     * @return array
+     */
+    public function jsonSerialize()
+    { 
+        $this->autocompleteItems(Tag::get()->map->tag->all());
+
+        return parent::jsonSerialize();
     }
 }
