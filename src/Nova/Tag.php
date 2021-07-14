@@ -72,19 +72,16 @@ class Tag extends Resource
     public function fields(Request $request)
     { 
         return [    
-
-            Url::make(__('Tag Name'), 'url')
-                ->exceptOnForms()
-                ->alwaysClickable() 
-                ->resolveUsing(function($value, $resource, $attribute) {
-                    return app('site')->get('taggable')->url(urldecode($value));
-                })
-                ->titleUsing(function($value, $resource) {
+            Url::make(__('Tag Name'), function()  {
+                    return $this->url();
+                })  
+                ->titleUsing(function() {
                     return $this->tag;
                 }) 
-                ->labelUsing(function($value, $resource) {
+                ->labelUsing(function() {
                     return $this->tag;
-                }),
+                })
+                ->alwaysClickable(),
 
             $this->when(! $request->isMethod('get'), function() {
                 return Text::make(__('Url'), 'tag')->fillUsing(function($request, $model) {
