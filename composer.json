@@ -2,14 +2,12 @@
     "name": "armincms/taggable",
     "description": "A Laravel Nova tool.",
     "keywords": [
-        "laravel",
-        "nova"
+        "armincms"
     ],
     "license": "MIT",
-    "require": {
-        "php": ">=7.1.0", 
-        "superlatif/nova-tag-input": "^1.1",
-        "zareismail/complex": "^0.3.0"
+    "require": { 
+        "armincms/contract": "^1.0", 
+        "superlatif/nova-tag-input": "^1.4"
     },
     "autoload": {
         "psr-4": {
@@ -18,8 +16,8 @@
     },
     "extra": {
         "laravel": {
-            "providers": [
-                "Armincms\\Taggable\\TaggableServiceProvider"
+            "providers": [ 
+                "Armincms\\Taggable\\ServiceProvider"
             ]
         }
     },
@@ -28,5 +26,6 @@
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
-    "version" : "1.0.7"
+    "version": "2.0.0"
 }
+

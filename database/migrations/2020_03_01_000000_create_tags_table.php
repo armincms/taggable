@@ -14,12 +14,11 @@ class CreateTagsTable extends Migration
     public function up()
     {
         Schema::create('tags', function (Blueprint $table) {
-            $table->bigIncrements('id');  
-            $table->auth();
-            $table->hits();
-            $table->config();
-            $table->timestamps(); 
-            $table->softDeletes(); 
+            $table->id();  
+            $table->resourceName();
+            $table->resourceSlug();  
+            $table->resourceUri(); 
+            $table->resourceHits();   
         });
     }
 

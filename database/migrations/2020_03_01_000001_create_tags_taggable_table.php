@@ -14,13 +14,9 @@ class CreateTagsTaggableTable extends Migration
     public function up()
     {
         Schema::create('tags_taggable', function (Blueprint $table) {
-            $table->bigIncrements('id'); 
-            $table->unsignedBigInteger('tag_id');
-            $table->morphs('taggable');
-
-            $table->foreign('tag_id')->references('id')->on('tags')
-                  ->onDelete('cascade')
-                  ->onUpdate('cascade');
+            $table->id(); 
+            $table->foreignId('tag_id')->constrained('tags');
+            $table->morphs('taggable'); 
         });
     }
 

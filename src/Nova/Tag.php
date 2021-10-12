@@ -1,40 +1,43 @@
 <?php
 
 namespace Armincms\Taggable\Nova;
-  
-use Illuminate\Http\Request;
-use Laravel\Nova\Panel; 
-use Laravel\Nova\Fields\{Text, Select, BooleanGroup}; 
-use Whitecube\NovaFlexibleContent\Flexible;    
-use Inspheric\Fields\Url;
-use Armincms\Nova\Fields\Images; 
-use Armincms\Fields\Targomaan;
-use Zareismail\Fields\Complex;
-use Armincms\Taggable\Helper;
-use Armincms\Nova\Resource;
 
-class Tag extends Resource
-{    
+use Armincms\Taggable\Gutenberg\Templates\SingleTag;
+use Armincms\Taggable\Models\Translation;
+use Armincms\Contract\Nova\Authorizable;
+use Armincms\Contract\Nova\Fields;
+use Armincms\Fields\Targomaan;
+use Illuminate\Http\Request;
+use Laravel\Nova\Fields\Badge; 
+use Laravel\Nova\Fields\Hidden;
+use Laravel\Nova\Fields\ID;
+use Laravel\Nova\Fields\Image;
+use Laravel\Nova\Fields\Select;
+use Laravel\Nova\Fields\Text;
+use Laravel\Nova\Fields\Textarea;
+use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Panel;
+use Laravel\Nova\Resource as NovaResource; 
+use Zareismail\Fields\Complex; 
+
+class Tag extends NovaResource
+{ 
+    use Authorizable;
+    use Fields;
+
     /**
      * The model the resource corresponds to.
      *
      * @var string
      */
-    public static $model = \Armincms\Taggable\Tag::class;
+    public static $model = \Armincms\Taggable\Models\Tag::class;
 
     /**
      * The single value that should be used to represent the resource when being displayed.
      *
      * @var string
      */
-    public static $title = 'tag';  
-
-    /**
-     * The logical group associated with the resource.
-     *
-     * @var string
-     */
-    public static $group = 'Taxonomies';
+    public static $title = 'name';
 
     /**
      * The columns that should be searched.
@@ -42,26 +45,8 @@ class Tag extends Resource
      * @var array
      */
     public static $search = [
-        'id'
+        'id', 'name'
     ];
-
-    /**
-     * Apply the search query to the query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  string  $search
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    protected static function applySearch($query, $search)
-    {
-        return $query->orWhere(function($query) use ($search) {
-            $query->when($search, function($query) use ($search) {
-                $query->whereHas('translations', function($query) use ($search) {
-                    $query->where('tag', 'like', "%{$search}%");
-                });
-            });
-        });
-    }
 
     /**
      * Get the fields displayed by the resource.
@@ -70,172 +55,83 @@ class Tag extends Resource
      * @return array
      */
     public function fields(Request $request)
-    { 
-        return [    
-            Url::make(__('Tag Name'), function()  {
-                    return $this->url();
-                })  
-                ->titleUsing(function() {
-                    return $this->tag;
-                }) 
-                ->labelUsing(function() {
-                    return $this->tag;
-                })
-                ->alwaysClickable(),
-
-            $this->when(! $request->isMethod('get'), function() {
-                return Text::make(__('Url'), 'tag')->fillUsing(function($request, $model) {
-                    $model->saved(function($model) {
-                        $model->translations()->get()->each->setPermalink();
-                    });
-                });
-            }), 
-
-            Targomaan::make([
-                
-                Text::make(__('Tag Name'), 'tag')
-                    ->required()
-                    ->rules('required')
-                    ->onlyOnForms(),
-
-                Text::make(__('Url Slug'), 'slug') 
-                    ->nullable()
-                    ->hideFromIndex()
-                    ->help(__('Caution: cleaning the input causes rebuild it. This string used in url address.'))
-                    ->onlyOnForms(), 
-            ]), 
-
-            Complex::make(__('Images'), [$this, 'imageFields']),   
-
-            new Panel(__('Advanced'), [  
-
-                Select::make(__('Display Layout'), 'config->layout')
-                    ->options(collect(static::newModel()->singleLayouts())->map->label())
-                    ->displayUsingLabels()
-                    ->hideFromIndex()
-                    ->required()
-                    ->rules('required'),
-
-                Complex::make(__('Contents Display Layout'), function() use ($request) {
-                    return Helper::displayableResources($request)->map(function($resource) {
-                            return Select::make(__($resource::label()), 'config->layouts->'.$resource::uriKey())
-                                        ->options(collect($resource::newModel()->listableLayouts())->map->label())
-                                        ->displayUsingLabels()
-                                        ->hideFromIndex();
-                    }); 
-                }),  
-
-                Text::make(__('Readmore'), 'config->display->readmore')
-                    ->withMeta(array_filter([
-                        'value' => $request->isCreateOrAttachRequest() ? __('Readmore ...') : null
-                    ])),
-
-                BooleanGroup::make(__('Display Setting'), 'config->display')
-                    ->options($this->displayConfigurations($request))
-                    ->withMeta(array_filter([
-                        'value' => $request->isCreateOrAttachRequest() 
-                                        ? $this->displayConfigurations($request)
-                                        : []
-                    ])),
-
-
-                Flexible::make(__('Contents Display Settings'))
-                    ->preset(\Armincms\Nova\Flexible\Presets\RelatableDisplayFields::class, [
-                        'request'   => $request,
-                        'interface' => \Armincms\Taggable\Contracts\Taggable::class, 
-                    ]),
-
-            ]), 
-        ];
-    }   
-
-    /**
-     * Return`s array of fields to hnalde iamges.
-     * 
-     * @return array
-     */
-    public function imageFields()
-    {
-        return [  
-            Images::make(__('Banner'), 'banner')
-                ->conversionOnPreview('common-thumbnail') 
-                ->conversionOnDetailView('common-thumbnail') 
-                ->conversionOnIndexView('common-thumbnail')
-                ->fullSize(),
-
-            Images::make(__('Logo'), 'logo')
-                ->conversionOnPreview('common-thumbnail') 
-                ->conversionOnDetailView('common-thumbnail') 
-                ->conversionOnIndexView('common-thumbnail')
-                ->fullSize(),
-
-            Images::make(__('Application Banner'), 'app_banner')
-                ->conversionOnPreview('common-thumbnail') 
-                ->conversionOnDetailView('common-thumbnail') 
-                ->conversionOnIndexView('common-thumbnail')
-                ->fullSize(),
-
-            Images::make(__('Application Logo'), 'app_logo')
-                ->conversionOnPreview('common-thumbnail') 
-                ->conversionOnDetailView('common-thumbnail') 
-                ->conversionOnIndexView('common-thumbnail')
-                ->fullSize(), 
-        ];
-    }
-
-    /**
-     * Returnc tag display configurations.
-     *
-     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request 
-     * @return array
-     */
-    public function displayConfigurations(Request $request)
     {
         return [
-            'name' => __('Display the tag name'), 
+            ID::make(__('Tag ID'), 'id')->sortable(), 
 
-            'banner' => __('Display the tag banner'),
+            Text::make(__('Tag Name'), 'name')
+                ->required()
+                ->rules('required'),
 
-            'logo' => __('Display the tag logo if possible'),  
+            Text::make(__('Tag Slug'), 'slug')
+                ->nullable(),  
+
+            $this->when($request->isResourceIndexRequest(), $this->resourceUrls()),
         ];
     }  
 
     /**
-     * Determine if the resource should be available for the given request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    public function authorizeToViewAny(Request $request)
-    {
-        return true;
-    } 
-
-    /**
-     * Determine if the resource should be available for the given request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    public static function authorizedToViewAny(Request $request)
-    {
-        return true;
-    }
-
-    /**
-     * Get the cards available on the entity.
+     * Get the actions available on the entity.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return array
      */
-    public function cards(Request $request)
+    public function actions(Request $request)
     {
         return [
-            Metrics\NewTags::make(),
-
-            Metrics\TagsPerDay::make(),
-
-            Metrics\TagsPerResource::make(),
+            Actions\CreateTag::make()->standalone()->canSee(function($request) {
+                return $request->user()->can('create', static::newModel());
+            }),
         ];
     }
+
+    /**
+     * Build an "index" query for the given resource.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function indexQuery(NovaRequest $request, $query)
+    {
+        return $query; 
+    }
+
+    /**
+     * Build a Scout search query for the given resource.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Laravel\Scout\Builder  $query
+     * @return \Laravel\Scout\Builder
+     */
+    public static function scoutQuery(NovaRequest $request, $query)
+    {
+        return $query;
+    }
+
+    /**
+     * Build a "detail" query for the given resource.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function detailQuery(NovaRequest $request, $query)
+    {
+        return parent::detailQuery($request, $query);
+    }
+
+    /**
+     * Build a "relatable" query for the given resource.
+     *
+     * This query determines which instances of the model may be attached to other resources.
+     *
+     * @param  \Laravel\Nova\Http\Requests\NovaRequest  $request
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function relatableQuery(NovaRequest $request, $query)
+    {
+        return parent::relatableQuery($request, $query);
+    }  
 }
