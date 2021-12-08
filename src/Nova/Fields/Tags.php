@@ -48,21 +48,23 @@ class Tags extends Field
      * @return array        
      */
     public function getTagIds(array $items)
-    {
-    	$tags = Tag::get()->pluck('tag', 'id');
+    { 
+        $tags = Tag::get()->pluck('tag', 'id');
 
-    	$newTags = collect($items)->reject(function($text) use ($tags) {
-    		return $tags->contains($text);
-    	})->map(function($tag) {
-    		return tap(new Tag, function($tag) {
-    			$tag->forceFill(['config' => []]);
+        $newTags = collect($items)->reject(function($text) use ($tags) {
+            return $tags->contains($text);
+        })->map(function($tag) {
+            return tap(new Tag, function($model) use ($tag) {
+                $model->forceFill(['config' => []]);
 
-                $tag->setTranslation('tag', $tag);
-                $tag->save();
-    		});
-    	}); 
+                $model->setTranslation('tag', $tag);
+                $model->save();
+            });
+        }); 
 
-    	return Tag::get()->pluck('id', 'tag')->only($items)->values()->all();
+        return Tag::with('translations')->get()->filter(function($tag) use ($items) {
+            return in_array($tag->getTranslation('tag'), $items);
+        })->modelKeys();
     }
 
     /**
