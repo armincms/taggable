@@ -54,12 +54,12 @@ class Tags extends Field
     	$newTags = collect($items)->reject(function($text) use ($tags) {
     		return $tags->contains($text);
     	})->map(function($tag) {
-    		$model = tap(new Tag, function($tag) {
+    		return tap(new Tag, function($tag) {
     			$tag->forceFill(['config' => []]);
-    		});
 
-			$model->setTranslation('tag', $tag);
-			$model->save();
+                $tag->setTranslation('tag', $tag);
+                $tag->save();
+    		});
     	}); 
 
     	return Tag::get()->pluck('id', 'tag')->only($items)->values()->all();
