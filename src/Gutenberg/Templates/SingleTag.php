@@ -7,6 +7,13 @@ use Zareismail\Gutenberg\Variable;
 
 class SingleTag extends Template 
 {       
+     /**
+     * The logical group associated with the template.
+     *
+     * @var string
+     */
+    public static $group = 'Tags'; 
+
     /**
      * Register the given variables.
      * 
@@ -23,9 +30,9 @@ class SingleTag extends Template
 
             Variable::make('hits', __('Tag hits')), 
 
-            Variable::make('contents', __('Rendered tag contents')),
+            Variable::make('items', __('Rendered tagged items')),
 
-            Variable::make('links', __('Rendered tag pagination links')),
+            Variable::make('pagination', __('Rendered tag pagination links')),
         ];
     } 
 }
