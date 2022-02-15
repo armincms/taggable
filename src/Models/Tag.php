@@ -52,7 +52,7 @@ class Tag extends Model
     public function serializeForWidget($request): array
     { 
         return array_merge($this->toArray(), [ 
-            'url'   => $this->getUrl($request),
+            'url'   => $this->getUrl($request) ?? collect($this->url())->map->url->first(),
         ]);
     }  
 }
