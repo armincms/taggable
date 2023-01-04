@@ -5,8 +5,8 @@
         "armincms"
     ],
     "license": "MIT",
-    "require": { 
-        "armincms/contract": "^1.0", 
+    "require": {
+        "armincms/contract": "^1.0",
         "superlatif/nova-tag-input": "^1.4"
     },
     "autoload": {
@@ -16,7 +16,7 @@
     },
     "extra": {
         "laravel": {
-            "providers": [ 
+            "providers": [
                 "Armincms\\Taggable\\ServiceProvider"
             ]
         }
@@ -26,6 +26,6 @@
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
-    "version": "2.1.0"
+    "version": "3.0.0"
 }
 
