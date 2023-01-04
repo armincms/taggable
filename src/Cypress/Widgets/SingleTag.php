@@ -2,29 +2,29 @@
 
 namespace Armincms\Taggable\Cypress\Widgets;
 
-use Armincms\Contract\Gutenberg\Templates\Pagination; 
-use Armincms\Contract\Gutenberg\Widgets\HasRelationships; 
-use Armincms\Contract\Gutenberg\Widgets\BootstrapsTemplate;  
-use Armincms\Contract\Gutenberg\Widgets\ResolvesDisplay;   
+use Armincms\Contract\Gutenberg\Templates\Pagination;
+use Armincms\Contract\Gutenberg\Widgets\BootstrapsTemplate;
+use Armincms\Contract\Gutenberg\Widgets\HasRelationships;
+use Armincms\Contract\Gutenberg\Widgets\ResolvesDisplay;
 use Laravel\Nova\Fields\Number;
 use Laravel\Nova\Fields\Select;
-use Zareismail\Cypress\Widget;  
 use Zareismail\Cypress\Http\Requests\CypressRequest;
-use Zareismail\Gutenberg\Gutenberg; 
-use Zareismail\Gutenberg\GutenbergWidget; 
+use Zareismail\Cypress\Widget;
+use Zareismail\Gutenberg\Gutenberg;
+use Zareismail\Gutenberg\GutenbergWidget;
 
 abstract class SingleTag extends GutenbergWidget
-{       
-    use BootstrapsTemplate; 
-    use HasRelationships; 
+{
+    use BootstrapsTemplate;
+    use HasRelationships;
     use ResolvesDisplay;
 
-     /**
+    /**
      * The logical group associated with the template.
      *
      * @var string
      */
-    public static $group = 'Tags'; 
+    public static $group = 'Tags';
 
     /**
      * Indicates if the widget should be shown on the component page.
@@ -35,46 +35,44 @@ abstract class SingleTag extends GutenbergWidget
 
     /**
      * Bootstrap the resource for the given request.
-     * 
-     * @param  \Zareismail\Cypress\Http\Requests\CypressRequest $request 
-     * @param  \Zareismail\Cypress\Layout $layout 
-     * @return void                  
+     *
+     * @param  \Zareismail\Cypress\Http\Requests\CypressRequest  $request
+     * @param  \Zareismail\Cypress\Layout  $layout
+     * @return void
      */
     public function boot(CypressRequest $request, $layout)
-    {   
+    {
         parent::boot($request, $layout);
 
-        collect(static::resources())->each(function($resource) use ($request, $layout) {
+        collect(static::resources())->each(function ($resource) use ($request, $layout) {
             if ($templateKey = $this->metaValue($resource::uriKey())) {
                 $template = $this->bootstrapTemplate($request, $layout, $templateKey);
 
-                $this->displayResourceUsing(function($attributes) use ($template) {
+                $this->displayResourceUsing(function ($attributes) use ($template) {
                     return $template->gutenbergTemplate($attributes)->render();
                 }, $resource);
-            } 
-        }); 
+            }
+        });
 
         $pagination = $this->bootstrapTemplate($request, $layout, $this->metaValue('pagination'));
 
-        $this->displayResourceUsing(function($attributes) use ($pagination) {
-            return $pagination->gutenbergTemplate($attributes)->render();
-        }, 'pagination');
+        $this->displayResourceUsing(fn ($attributes) => $pagination->gutenbergTemplate($attributes)->render(), 'pagination');
 
         $this->withMeta([
             'resource' => $request->resolveFragment()->metaValue('resource'),
-        ]); 
-    } 
+        ]);
+    }
 
     /**
      * Get the parent model.
-     * 
-     * @param  string  $relationship 
+     *
+     * @param  string  $relationship
      * @return \Illuminate\Database\Eloquent\Model
      */
     protected function getParent(string $relationship)
-    { 
+    {
         return $this->metaValue('resource');
-    } 
+    }
 
     /**
      * Get the fields displayed by the resource.
@@ -84,32 +82,32 @@ abstract class SingleTag extends GutenbergWidget
      */
     public static function fields($request)
     {
-        return collect(static::resources())->map(function($resource) {
+        return collect(static::resources())->map(function ($resource) {
             return Select::make(__('Display '.$resource::label().' By'), 'config->'.$resource::uriKey())
                 ->options(Gutenberg::cachedTemplates()->forHandler(static::handler($resource))->keyBy->getKey()->map->name)
-                ->nullable() 
+                ->nullable()
                 ->displayUsingLabels()
                 ->withMeta([
-                    'placeholder' => __('Dont Display '.$resource::label())
+                    'placeholder' => __('Dont Display '.$resource::label()),
                 ]);
-        })->merge([ 
+        })->merge([
             Select::make(__('Display Pagination By'), 'config->pagination')
                 ->options(Gutenberg::cachedTemplates()->forHandler(Pagination::class)->keyBy->getKey()->map->name)
                 ->displayUsingLabels()
                 ->required()
-                ->rules('required'),  
+                ->rules('required'),
 
             Number::make(__('Display per page'), 'config->per_page')
                 ->required()
                 ->min(1)
                 ->rules('required', 'min:1')
                 ->default(15),
-        ])->toArray(); 
+        ])->toArray();
     }
 
     /**
      * Serialize the widget fro template.
-     * 
+     *
      * @return array
      */
     public function serializeForDisplay(): array
@@ -118,10 +116,10 @@ abstract class SingleTag extends GutenbergWidget
         $paginator = $this->belongsToMany('tags');
 
         return array_merge($resource->serializeForWidget($this->getRequest()), [
-            'items' => $paginator->getCollection()->map(function($item) { 
+            'items' => $paginator->getCollection()->map(function ($item) {
                 $resource = static::findResourceForModel($item);
 
-                return $this->displayResource( 
+                return $this->displayResource(
                     $item->serializeForWidget($this->getRequest(), false),
                     $resource
                 );
@@ -133,7 +131,7 @@ abstract class SingleTag extends GutenbergWidget
 
     /**
      * Query related templates.
-     * 
+     *
      * @param  [type] $request [description]
      * @param  [type] $query   [description]
      * @return [type]          [description]
@@ -143,32 +141,32 @@ abstract class SingleTag extends GutenbergWidget
         return $query->handledBy(
             \Armincms\Taggable\Gutenberg\Templates\SingleTag::class,
         );
-    } 
+    }
 
     /**
      * Get resource for the given model.
-     * 
-     * @param  \Illuminate\Database\Eloqeunt\Model $model 
-     * @return string      
+     *
+     * @param  \Illuminate\Database\Eloqeunt\Model  $model
+     * @return string
      */
     public static function findResourceForModel($model)
     {
-        return collect(static::resources())->first(function($resource) use ($model) {
+        return collect(static::resources())->first(function ($resource) use ($model) {
             return $resource::$model === get_class($model);
         });
     }
-  
+
     /**
      * Get the tag related content template name.
-     * 
+     *
      * @return string
      */
-    abstract public static function resources(): array; 
-  
+    abstract public static function resources(): array;
+
     /**
      * Get the template handlers for given resourceName.
-     * 
+     *
      * @return string
      */
-    abstract public static function handler(string $resourceName): array; 
+    abstract public static function handler(string $resourceName): array;
 }

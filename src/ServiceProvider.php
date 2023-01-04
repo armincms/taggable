@@ -3,12 +3,12 @@
 namespace Armincms\Taggable;
 
 use Illuminate\Contracts\Support\DeferrableProvider;
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider;   
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider;
 use Laravel\Nova\Nova as LaravelNova;
 use Zareismail\Gutenberg\Gutenberg;
 
 class ServiceProvider extends AuthServiceProvider implements DeferrableProvider
-{ 
+{
     /**
      * The policy mappings for the application.
      *
@@ -25,10 +25,10 @@ class ServiceProvider extends AuthServiceProvider implements DeferrableProvider
      */
     public function register()
     {
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations'); 
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->registerPolicies();
-        $this->resources(); 
-        $this->fragments(); 
+        $this->resources();
+        $this->fragments();
         $this->templates();
         $this->menus();
     }
@@ -39,11 +39,11 @@ class ServiceProvider extends AuthServiceProvider implements DeferrableProvider
      * @return void
      */
     protected function resources()
-    { 
+    {
         LaravelNova::resources([
-            Nova\Tag::class, 
+            Nova\Tag::class,
         ]);
-    } 
+    }
 
     /**
      * Register the application's Gutenberg fragments.
@@ -51,11 +51,11 @@ class ServiceProvider extends AuthServiceProvider implements DeferrableProvider
      * @return void
      */
     protected function fragments()
-    {   
+    {
         Gutenberg::fragments([
-            Cypress\Fragments\Tag::class, 
+            Cypress\Fragments\Tag::class,
         ]);
-    } 
+    }
 
     /**
      * Register the application's Gutenberg templates.
@@ -63,10 +63,10 @@ class ServiceProvider extends AuthServiceProvider implements DeferrableProvider
      * @return void
      */
     protected function templates()
-    {   
+    {
         Gutenberg::templates([
-            \Armincms\Taggable\Gutenberg\Templates\SingleTag::class, 
-        ]); 
+            \Armincms\Taggable\Gutenberg\Templates\SingleTag::class,
+        ]);
     }
 
     /**
@@ -75,14 +75,14 @@ class ServiceProvider extends AuthServiceProvider implements DeferrableProvider
      * @return void
      */
     protected function menus()
-    {    
-        $this->app->booted(function() {  
+    {
+        $this->app->booted(function () {
             $menus = array_unique(array_merge((array) config('nova-menu.menu_item_types'), [
-                Menus\Tag::class, 
+                Menus\Tag::class,
             ]));
 
-            app('config')->set('nova-menu.menu_item_types', $menus);  
-        }); 
+            app('config')->set('nova-menu.menu_item_types', $menus);
+        });
     }
 
     /**
@@ -93,7 +93,7 @@ class ServiceProvider extends AuthServiceProvider implements DeferrableProvider
     public function provides()
     {
         return [];
-    } 
+    }
 
     /**
      * Get the events that trigger this service provider to register.
@@ -106,5 +106,5 @@ class ServiceProvider extends AuthServiceProvider implements DeferrableProvider
             \Illuminate\Console\Events\ArtisanStarting::class,
             \Laravel\Nova\Events\ServingNova::class,
         ];
-    } 
+    }
 }
